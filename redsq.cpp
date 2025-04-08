@@ -162,6 +162,9 @@ class Scene {
             if (depth <= 0) {
                 return Vector(0, 0, 0);
             }
+            Vector colour = Vector(0, 0, 0);
+
+            double eps = 1e-5;
 
             Vector P;
             Vector N;
@@ -173,18 +176,17 @@ class Scene {
                 is_in = dot(ray.u, N) < 0 ? false : true;
 
                 if (S.mirror) {
-
                     Vector refl_dir = ray.u - N * (2 * dot(ray.u, N));
                     refl_dir.normalize();
-                    Vector offsetP = P + N * 1e-4;
-                    return getColour(Ray(offsetP, refl_dir), depth - 1, lpos, I, is_in);
+                    return getColour(Ray(P + N * eps, refl_dir), depth - 1, lpos, I, is_in);
                 }
 
                 else if (S.transparent) {
-
                     Ray i_inc = ray;
                     Vector i = i_inc.u; // incident ray
                     i.normalize();
+
+                    double Ni = dot(N, i);
 
                     // fresnel reflection
                     double n1 = 1.0; // refarction index for air
@@ -192,7 +194,7 @@ class Scene {
                     bool in1 = true; // refracted ray
                     bool in2 = false; // reflected ray
 
-                    if (dot(N, i) >= 0) {
+                    if (Ni >= 0) {
                         std::swap(n1, n2);
                         std::swap(in1, in2);
                     }
@@ -297,9 +299,9 @@ int main() {
     Scene scene;
 
     // Subjects of the Image
-    scene.add(Sphere(Vector(-18, -2, 0), 8, Vector(0.7, 0.1, 0.5), false, true, 1.5));
-    scene.add(Sphere(Vector(0, -2, 0), 8, Vector(0.7, 0.1, 0.5), true));
-    scene.add(Sphere(Vector(18, -2, 0), 8, Vector(1, 1, 1), false, true, 1.8));
+    scene.add(Sphere(Vector(-12, 0, 0), 10, Vector(0.7, 0.1, 0.5), false, true, 1.5));
+    // scene.add(Sphere(Vector(0, -2, 0), 8, Vector(0.7, 0.1, 0.5), true));
+    scene.add(Sphere(Vector(12, 0, 0), 10, Vector(0.7, 0.1, 0.5)));
 
 
     // Background
@@ -340,7 +342,7 @@ int main() {
 
     }
 
-    stbi_write_png("image.png", W, H, 3, &image[0], 0);
+    stbi_write_png("test.png", W, H, 3, &image[0], 0);
  
     return 0;
 }
