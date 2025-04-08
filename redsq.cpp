@@ -108,16 +108,6 @@ public:
      
         P = r.O + t * r.u;
 
-        /*
-        if (is_in) {
-            P = r.O + t1 * r.u;
-        }
-
-        else {
-            P = r.O + t2 * r.u;
-        }
-        */
-
         N = (P - C) / (P - C).norm();
 
         return true;
@@ -182,88 +172,82 @@ class Scene {
                 }
 
                 else if (S.transparent) {
-                    Ray i_inc = ray;
-                    Vector i = i_inc.u; // incident ray
+                    // incident ray
+                    Vector i = ray.u; 
                     i.normalize();
-
                     double Ni = dot(N, i);
 
-                    // fresnel reflection
+                    // fresnel reflection -- Bruno Iorio helped me with the logic here :)
+
                     double n1 = 1.0; // refarction index for air
                     double n2 = S.n; // refraction index for sphere
-                    bool in1 = true; // refracted ray
-                    bool in2 = false; // reflected ray
+                    bool entering = Ni < 0;
 
-                    if (Ni >= 0) {
+                    if (!entering) {
                         std::swap(n1, n2);
-                        std::swap(in1, in2);
+                        N = -1 * N;
+                        Ni = dot(N, i);
                     }
 
-                    double k0 = sqr(n1-n2)/sqr(n1+n2);
-                    double R = k0 + (1 - k0) * (1 - std::abs(dot(N, i))); // this has to be to the power of 5
-                    double T = 1 - R;
-                    Vector P1;
-                    Vector P2;
+                    Vector refl_origin = P + N * eps;
 
-                    if (in1) {
-                        P1 = P - 1e-4 * N;
-                    }
-                    else {
-                        P1 = P + 1e-4 * N;
-                    }
+                    double ratio = n1 / n2;
+                    double c = 1 - sqr(ratio) * (1 - sqr(Ni));
 
-                    if (in2) {
-                        P2 = P - 1e-4 * N;
+                    if (c < 0) { 
+                        // total internal reflection
+                        Vector refl_dir = i - 2 * Ni * N;
+                        refl_dir.normalize();
+                        Ray refl = Ray(refl_origin, refl_dir);
+                        return getColour(refl, depth - 1, lpos, I, is_in);
                     }
                     else {
-                        P2 = P + 1e-4 * N;
-                    }
+                        // refraction -- apply Fresnel
+                        Vector vt = ratio * (i - Ni * N);
+                        Vector vn = -1 * N * sqrt(c);
+                        Vector vf = vt + vn;
+                        vf.normalize();
+                        Vector refr_origin = P - N * eps;
 
-                    if (1 < sqr(n1/n2) * (1 - sqr(dot(i, N)))) { // total internal reflection
-                        Ray refl = Ray(P2, i - 2 * dot(i, N) * N);
-                        return getColour(refl, depth - 1, lpos, I, in2);
-                    }
-                    else {
-                        Vector vt = (n1/n2) * (i - dot(i, N) * N);
-                        Vector vn = N * (sqrt(1 - sqr(n1/n2) * (1 - sqr(dot(i, N)))));
-                        Vector vf;
+                        double k0 = sqr(n1 - n2) / sqr(n1 + n2);
+                        double R = k0 + (1 - k0) * pow((1 - std::abs(Ni)), 5); 
+                        double T = 1 - R;
 
-                        if (in1) {
-                            vf = vt - vn;
-                        }
-                        else {
-                            vf = vt + vn;
-                        }
+                        Ray refr = Ray(refr_origin, vf);
+                        Vector refr_colour = getColour(refr, depth - 1, lpos, I, is_in);
 
-                        Ray refr = Ray(P1, vf);
-                        Vector refr_colour = getColour(refr, depth - 1, lpos, I, in1);
-
-                        Ray refl = Ray(P2, i - 2 * dot(i, N) * N);
-                        Vector refl_colour = getColour(refl, depth - 1, lpos, I, in2);
-                        double refl_ratio = 0.02;
+                        Vector refl_dir = i - 2 * Ni * N;
+                        refl_dir.normalize();
+                        Ray refl = Ray(refl_origin, refl_dir);
+                        Vector refl_colour = getColour(refl, depth - 1, lpos, I, is_in);
                         
-                        return refl_colour * refl_ratio + refr_colour * (1 - refl_ratio);
+                        return refl_colour * R + refr_colour * T;
 
                     }
                 }
 
                 else {
-
+                    // check for shadow
                     if (isShadow(P, N, lpos, is_in)) {
-                        return Vector(0, 0, 0);
+                        return colour;
                     }
 
-                    Vector L = lpos - P;
-                    double dist = L.norm2();
-                    Vector material = rho / M_PI;
-                    double const1 = I / (4 * M_PI * dist);
-                    double pos_dot = std::max(0.0, dot(N, L / L.norm()));
+                    else {
+                        // direct lighting
+                        Vector L = lpos - P;
+                        double dist = L.norm2();
+                        Vector material = rho / M_PI;
+                        double const1 = I / (4 * M_PI * dist);
+                        double pos_dot = std::max(0.0, dot(N, L / L.norm()));
+                        colour = colour + material * const1 * pos_dot;
+    
+                        return colour;
+                    }
 
-                    return material * const1 * pos_dot;
                 }
             }
 
-            return Vector(0, 0, 0);
+            return colour;
         }
 
         bool isShadow(const Vector& P, const Vector& N, const Vector& lpos, bool& is_in) {
@@ -288,9 +272,10 @@ class Scene {
             // No intersection, the light is visible
             return false;
         }
+
+
 };
 
- 
 
 int main() {
 // #pragma omp parallel for schedule(dynamic, 1) // parallelises code
@@ -299,9 +284,9 @@ int main() {
     Scene scene;
 
     // Subjects of the Image
-    scene.add(Sphere(Vector(-12, 0, 0), 10, Vector(0.7, 0.1, 0.5), false, true, 1.5));
-    // scene.add(Sphere(Vector(0, -2, 0), 8, Vector(0.7, 0.1, 0.5), true));
-    scene.add(Sphere(Vector(12, 0, 0), 10, Vector(0.7, 0.1, 0.5)));
+    scene.add(Sphere(Vector(-20, -1, 0), 9, Vector(0.7, 0.1, 0.5), false, true, 1.5));
+    scene.add(Sphere(Vector(0, -1, 0), 9, Vector(0.7, 0.1, 0.5), true));
+    scene.add(Sphere(Vector(20, -1, 0), 9, Vector(0.7, 0.1, 0.5)));
 
 
     // Background
@@ -342,7 +327,7 @@ int main() {
 
     }
 
-    stbi_write_png("test.png", W, H, 3, &image[0], 0);
+    stbi_write_png("TD1res.png", W, H, 3, &image[0], 0);
  
     return 0;
 }
