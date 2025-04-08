@@ -404,8 +404,8 @@ int main() {
     stbi_write_png("test.png", W, H, 3, &image[0], 0);
 
     auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop-start);
-    std::cout << "Rendering took " << duration.count() << " milliseconds." << std::endl;
+    auto time = std::chrono::duration_cast<std::chrono::milliseconds>(stop-start);
+    std::cout << "Time: " << time.count() << " milliseconds." << std::endl;
  
     return 0;
 }
