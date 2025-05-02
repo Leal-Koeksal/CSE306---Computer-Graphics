@@ -1,3 +1,1 @@
-# Assignment1
-
-This repository hold all work completed in the first 4 labs.
+This project was completed by Leal Köksal
