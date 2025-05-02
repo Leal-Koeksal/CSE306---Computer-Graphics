@@ -1,3 +1,13 @@
+
+
+/*
+DISCLAIMER
+I used the following github to debug my code when I got stuck. I did my best not to copy the ideas or code, but only compare snippets of code that were not working 
+for me at all. Great thanks to this student who seems to have done a great job!
+https://github.com/vrushank-agrawal/CSE306/tree/7ae1812edfc369827a417d57afe801f7b93f0b9b
+*/
+
+
 #define _CRT_SECURE_NO_WARNINGS 1
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
