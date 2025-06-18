@@ -522,15 +522,15 @@ int main() {
 	VoronoiDiagram Vor;
 
 	for( int i = 0; i < N; i++ ) {
-		Vor.points.push_back( Vector( uniform( engine ), uniform( engine ), 0.0 ) );
-        Vor.weights.push_back( 0 );
+		Vor.points.push_back(Vector(uniform(engine), uniform(engine), 0));
+        	Vor.weights.push_back(0);
 	}
 
     std::cout << "Init done!";
 
     auto start = std::chrono::high_resolution_clock::now();
 
-	Vor.compute();
+    Vor.compute();
 
     std::cout << "Compute done!";
 
