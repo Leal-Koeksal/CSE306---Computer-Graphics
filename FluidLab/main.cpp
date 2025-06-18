@@ -499,7 +499,7 @@ public:
 
 int main() {
 	int N = 85;  //particles
-    int m = 200; // mass
+    int m = 150; // mass
     double frames = 100; // number of frames
 
     std::cout << "Program started!";
