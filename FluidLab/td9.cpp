@@ -87,6 +87,7 @@ public:
     int group;       // face group
 };
  
+// I used AI for this function, specifically the idea
 struct pair_hash {
     std::size_t operator()(const std::pair<int, int>& p) const {
         return std::hash<int>{}(p.first) ^ (std::hash<int>{}(p.second) << 1);
@@ -111,7 +112,8 @@ public:
         for (auto& tri : indices) {
             int v[3] = {tri.vtxi, tri.vtxj, tri.vtxk};
             for (int i = 0; i < 3; ++i) {
-                int a = v[i], b = v[(i + 1) % 3];
+                int a = v[i]; // edge
+                int b = v[(i + 1) % 3]; // edge
                 adjacency[a].insert(b);
                 adjacency[b].insert(a);
                 auto edge = std::minmax(a, b);
@@ -182,7 +184,7 @@ public:
             fprintf(f, "vt %f %f\n", uv[0], uv[1]);
         }
         for (const TriangleIndices& tri : indices) {
-            fprintf(f, "f %d/%d %d/%d %d/%d\n",
+            fprintf(f, "f %d/%d %d/%d %d/%d\n", // format from other obj files
             tri.vtxi + 1, tri.vtxi + 1,
             tri.vtxj + 1, tri.vtxj + 1,
             tri.vtxk + 1, tri.vtxk + 1);
@@ -369,9 +371,9 @@ int main() {
     TriangleMesh mesh;
     mesh.readOBJ("goethe.obj");
 
-    auto uv_coords = mesh.tutteEmbedding();  
+    auto uv_coords = mesh.tutteEmbedding();  // Compute Tutte embedding
 
-    mesh.writeOBJ_with_uv("flattened.obj", uv_coords);  
+    mesh.writeOBJ_with_uv("flattened.obj", uv_coords);  // Save result
 
     std::cout << "Flattened mesh saved to flattened.obj\n";
     return 0;
